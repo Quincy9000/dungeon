@@ -11,6 +11,7 @@
 #include "constants.c"
 #include "room.c"
 #include "actor.c"
+#include "astar.c"
 
 Vector2 Vector2LerpDecay(Vector2 start, Vector2 end, float speed, float decay)
 {
@@ -74,6 +75,28 @@ Vector2 ActorMoveRandom(const Actor *actor)
         break;
     }
     return newPosition;
+}
+
+Vector2 ActorGetNextPosition(const Actor *actor, const Actor *player, const Tile *tiles)
+{
+    int sx = (int)(actor->position.x / TILE_WIDTH);
+    int sy = (int)(actor->position.y / TILE_HEIGHT);
+    int gx = (int)(player->position.x / TILE_WIDTH);
+    int gy = (int)(player->position.y / TILE_HEIGHT);
+
+    size_t pathLen = 0;
+    bool success = AStarFindPathCached(sx, sy, gx, gy, tiles, &pathLen);
+
+    if (success && pathLen > 1) // path includes current tile, so next step is [1]
+    {
+        Vector2 nextTile = pathBuffer[1];
+        Vector2 nextPos = {nextTile.x * TILE_WIDTH, nextTile.y * TILE_HEIGHT};
+        return nextPos;
+    }
+    else
+    {
+        return ActorMoveRandom(actor);
+    }
 }
 
 bool CheckActorCanMoveTo(const Actor *actor, const Vector2 newPosition, const Tile *tiles)
@@ -223,6 +246,15 @@ int main()
         actors[i] = ActorCreate(center.x * TILE_WIDTH, center.y * TILE_HEIGHT, texture, RED);
         actors[i] = ActorSetName(actors[i], GetRandomActorName());
         ActorSetVisibility(&actors[i], false);
+
+        if (GetRandomValue(0, 1) == 1)
+        {
+            ActorSetBrain(&actors[i], true);
+        }
+        else
+        {
+            ActorSetBrain(&actors[i], false);
+        }
     }
 
     Room room = rooms[GetRandomValue(0, ROOM_COUNT - 1)];
@@ -234,6 +266,8 @@ int main()
     ActorSetVisibility(&a, true);
 
     bool playerMoved = false;
+
+    BuildWalkableTiles(tiles);
 
     while (!WindowShouldClose())
     {
@@ -264,7 +298,7 @@ int main()
         const int ray_length = 50;
         for (int i = 0; i < rays; i++)
         {
-            float angle = (float)i / (float)rays * 2.0f * PI;
+            float angle = (float)i / (float)rays * (float)TAU;
             Vector2 rayDirection = {cosf(angle), sinf(angle)};
             Vector2 rayPosition = a.position;
 
@@ -317,7 +351,7 @@ int main()
                     continue;
                 }
 
-                Vector2 newPosition = ActorMoveRandom(actor);
+                Vector2 newPosition = ActorGetNextPosition(actor, &a, tiles);
                 size_t walkedIntoPlayer = CheckActorWalkintoActor(actor, newPosition, &a, 1);
                 size_t walkedIntoOther = CheckActorWalkintoActor(actor, newPosition, actors, actorCount);
                 bool canWalk = CheckActorCanMoveTo(&actors[i], newPosition, tiles) && walkedIntoOther == (size_t)-1;
@@ -388,7 +422,9 @@ int main()
             Vector2 screenPos = actor->position;
             if (actor->mask & VISIBILITY_MASK)
             {
-                GuiDrawText(ActorGetName(actor), (Rectangle){screenPos.x - 50, screenPos.y - 40, 100, 20}, TEXT_ALIGN_CENTER, WHITE);
+                GuiSetStyle(DEFAULT, TEXT_SIZE, 14);
+                GuiDrawText(TextFormat("%s: Smart", ActorGetName(actor)), (Rectangle){screenPos.x - 50, screenPos.y - 40, 100, 20}, TEXT_ALIGN_CENTER, YELLOW);
+                GuiSetStyle(DEFAULT, TEXT_SIZE, 12);
             }
         }
 
