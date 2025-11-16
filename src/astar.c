@@ -5,30 +5,27 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-typedef struct
+typedef struct ANode
 {
     int x, y;
     int g, h;
     int parent; // index in node buffer
     bool open;
     bool closed;
-} Node;
+} ANode;
 
 // maximum grid size (adjust to your map)
 #define MAX_NODES (GRID_WIDTH * GRID_HEIGHT)
 
 // reusable buffers
-static Node nodesBuffer[MAX_NODES];
+static ANode nodesBuffer[MAX_NODES];
 static Vector2 pathBuffer[MAX_NODES];
 
-// walkable tiles lookup
+// cache of walkable tiles
 static bool isWalkable[MAX_NODES];
 static int walkableIndices[MAX_NODES];
 static int walkableCount = 0;
 
-/**
- * Call this once after map load to build walkable tiles.
- */
 void BuildWalkableTiles(const Tile *tiles)
 {
     walkableCount = 0;

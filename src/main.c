@@ -12,6 +12,7 @@
 #include "room.c"
 #include "actor.c"
 #include "astar.c"
+#include "textlog.c"
 
 Vector2 Vector2LerpDecay(Vector2 start, Vector2 end, float speed, float decay)
 {
@@ -179,6 +180,8 @@ int main()
     camera.offset = (Vector2){WIDTH / 2.0f, HEIGHT / 2.0f};
     camera.rotation = 0.0f;
     camera.zoom = ZOOM;
+
+    TextLog *log = TextLogCreate(10);
 
     Image img = GenImageColor(TILE_WIDTH, TILE_HEIGHT, GRAY);
     if (img.data == NULL)
@@ -365,7 +368,8 @@ int main()
                     int healthBefore = a.stats.health;
                     a.stats = Fight(actors[i].stats, a.stats);
                     int damage = healthBefore - a.stats.health;
-                    printf("%s hits %s for %d damage\n", ActorGetName(actor), ActorGetName(&a), damage);
+                    // printf("%s hits %s for %d damage\n", ActorGetName(actor), ActorGetName(&a), damage);
+                    TextLogAddLine(log, TextFormat("%s hits %s for %d damage", ActorGetName(actor), ActorGetName(&a), damage));
                 }
                 else if (canWalk)
                 {
@@ -388,7 +392,8 @@ int main()
                 int healthBefore = enemy->stats.health;
                 enemy->stats = Fight(a.stats, enemy->stats);
                 int damage = healthBefore - enemy->stats.health;
-                printf("%s hits %s for %d damage\n", ActorGetName(&a), ActorGetName(enemy), damage);
+                // printf("%s hits %s for %d damage\n", ActorGetName(&a), ActorGetName(enemy), damage);
+                TextLogAddLine(log, TextFormat("%s hits %s for %d damage", ActorGetName(&a), ActorGetName(enemy), damage));
                 playerMoved = true;
             }
             else if (CheckActorCanMoveTo(&a, newPosition, tiles) && walkedIntoEnemy == (size_t)-1)
@@ -442,7 +447,20 @@ int main()
 
         DrawText(TextFormat("FPS: %d", GetFPS()), WIDTH - 100, 10, 20, WHITE);
 
+        DrawLogs(log, (Vector2){50, HEIGHT - 100}, 20, WHITE, 100);
+
         EndDrawing();
+
+        if (IsKeyPressed(KEY_C))
+        {
+            TextLogClear(log);
+        }
+
+        if (IsKeyPressed(KEY_L))
+        {
+            printf("Adding log entry\n");
+            TextLogAddLine(log, "This is a test log entry.");
+        }
     }
 
     CloseWindow();
