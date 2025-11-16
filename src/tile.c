@@ -5,12 +5,15 @@
 #ifndef TILE_C
 #define TILE_C
 
+const int VISIBILITY_MASK = 1 << 0;
+const int EXPLORED_MASK = 1 << 1;
+const int SOLID_MASK = 1 << 2;
+
 typedef struct Tile
 {
     Vector2 position;
     Texture2D texture;
-    bool isSolid;
-    bool isVisible;
+    int mask;
 } Tile;
 
 Tile TileCreate(Vector2 position, Texture2D texture)
@@ -18,18 +21,17 @@ Tile TileCreate(Vector2 position, Texture2D texture)
     Tile tile;
     tile.position = position;
     tile.texture = texture;
-    tile.isSolid = true;
-    tile.isVisible = true;
+    tile.mask = SOLID_MASK | VISIBILITY_MASK;
     return tile;
 }
 
 void TileDraw(const Tile *tile)
 {
-    if (tile->isVisible)
+    if (tile->mask & EXPLORED_MASK)
     {
         DrawTextureV(tile->texture,
                      tile->position,
-                     WHITE);
+                     GRAY);
     }
     else
     {

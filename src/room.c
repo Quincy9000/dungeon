@@ -92,8 +92,7 @@ void RoomCarve(const Room room, Tile *tiles)
             {
                 int index = tileY * GRID_WIDTH + tileX;
                 Tile *tile = &tiles[index];
-                tile->isSolid = false;
-                tile->isVisible = false;
+                tile->mask = tile->mask & ~SOLID_MASK;
             }
         }
     }
@@ -113,8 +112,7 @@ void CarveCorridor(const Room roomA, const Room roomB, Tile *tiles)
     {
         int index = currentY * GRID_WIDTH + currentX;
         Tile *tile = &tiles[index];
-        tile->isSolid = false;
-        tile->isVisible = false;
+        tile->mask = tile->mask & ~SOLID_MASK;
 
         currentX += (x2 > currentX) ? 1 : -1;
     }
@@ -123,9 +121,7 @@ void CarveCorridor(const Room roomA, const Room roomB, Tile *tiles)
     {
         int index = currentY * GRID_WIDTH + currentX;
         Tile *tile = &tiles[index];
-        tile->isSolid = false;
-        tile->isVisible = false;
-
+        tile->mask = tile->mask & ~SOLID_MASK;
         currentY += (y2 > currentY) ? 1 : -1;
     }
 }

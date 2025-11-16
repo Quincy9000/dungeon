@@ -78,8 +78,11 @@ Vector2 ActorMoveRandom(const Actor *actor)
 
 bool CheckActorCanMoveTo(const Actor *actor, const Vector2 newPosition, const Tile *tiles)
 {
-    if (newPosition.x < 0 || newPosition.x >= WIDTH ||
-        newPosition.y < 0 || newPosition.y >= HEIGHT)
+    const int32_t W = GRID_WIDTH * TILE_WIDTH;
+    const int32_t H = GRID_HEIGHT * TILE_HEIGHT;
+
+    if (newPosition.x < 0 || newPosition.x >= W ||
+        newPosition.y < 0 || newPosition.y >= H)
     {
         return false;
     }
@@ -101,7 +104,7 @@ bool CheckActorCanMoveTo(const Actor *actor, const Vector2 newPosition, const Ti
     int index = tileY * GRID_WIDTH + tileX;
     const Tile *tile = &tiles[index];
 
-    return !tile->isSolid;
+    return !(tile->mask & SOLID_MASK);
 }
 
 bool ActorWait()
@@ -139,7 +142,7 @@ int main()
     camera.target = (Vector2){WIDTH / 2.0f, HEIGHT / 2.0f};
     camera.offset = (Vector2){WIDTH / 2.0f, HEIGHT / 2.0f};
     camera.rotation = 0.0f;
-    camera.zoom = 2.0f;
+    camera.zoom = ZOOM;
 
     Image img = GenImageColor(TILE_WIDTH, TILE_HEIGHT, GRAY);
     if (img.data == NULL)
@@ -159,7 +162,8 @@ int main()
     UnloadImage(img);
     SetTextureFilter(texture, TEXTURE_FILTER_POINT);
 
-    Tile *tiles = (Tile *)MemAlloc(GRID_WIDTH * GRID_HEIGHT * sizeof(Tile));
+    const size_t TILE_COUNT = GRID_WIDTH * GRID_HEIGHT;
+    Tile *tiles = (Tile *)MemAlloc(TILE_COUNT * sizeof(Tile));
     if (!tiles)
     {
         UnloadTexture(texture);
@@ -169,11 +173,11 @@ int main()
 
     FillTiles(tiles, texture);
 
-    Room rooms[roomCount];
+    Room rooms[ROOM_COUNT];
 
-    for (size_t i = 0; i < roomCount; i++)
+    for (size_t i = 0; i < ROOM_COUNT; i++)
     {
-        Room tempRoom = RoomRandom(minRoomWidth, minRoomHeight, maxRoomWidth, maxRoomHeight);
+        Room tempRoom = RoomRandom(MIN_ROOM_WIDTH, MIN_ROOM_HEIGHT, MAX_ROOM_WIDTH, MAX_ROOM_HEIGHT);
         while (1)
         {
             bool intersects = false;
@@ -191,21 +195,21 @@ int main()
                 break;
             }
 
-            tempRoom = RoomRandom(minRoomWidth, minRoomHeight, maxRoomWidth, maxRoomHeight);
+            tempRoom = RoomRandom(MIN_ROOM_WIDTH, MIN_ROOM_HEIGHT, MAX_ROOM_WIDTH, MAX_ROOM_HEIGHT);
         }
         rooms[i] = tempRoom;
     }
 
-    for (size_t i = 0; i < roomCount; i++)
+    for (size_t i = 0; i < ROOM_COUNT; i++)
     {
         Room room = rooms[i];
         RoomCarve(room, tiles);
     }
 
-    for (size_t i = 0; i < roomCount; i++)
+    for (size_t i = 0; i < ROOM_COUNT; i++)
     {
         Room roomA = rooms[i];
-        Room roomB = rooms[(i + 1) % roomCount];
+        Room roomB = rooms[(i + 1) % ROOM_COUNT];
         CarveCorridor(roomA, roomB, tiles);
     }
 
@@ -214,13 +218,13 @@ int main()
 
     for (int i = 0; i < actorCount; i++)
     {
-        Room room = rooms[GetRandomValue(0, roomCount - 1)];
+        Room room = rooms[GetRandomValue(0, ROOM_COUNT - 1)];
         Vector2 center = RoomRandomSpot(&room);
         actors[i] = ActorCreate(center.x * TILE_WIDTH, center.y * TILE_HEIGHT, texture, BLUE);
         actors[i] = ActorSetName(actors[i], GetRandomActorName());
     }
 
-    Room room = rooms[GetRandomValue(0, roomCount - 1)];
+    Room room = rooms[GetRandomValue(0, ROOM_COUNT - 1)];
     Vector2 center = RoomRandomSpot(&room);
     Actor a = ActorCreate(center.x * TILE_WIDTH, center.y * TILE_HEIGHT, texture, ORANGE);
     a.stats = (Stats){.health = 200, .attack = 20, .defense = 5};
@@ -231,19 +235,43 @@ int main()
 
     while (!WindowShouldClose())
     {
+        // Game Logic
+
         TryExit();
 
-        camera.target = Vector2LerpDecay(camera.target, a.position, TIME_STEP * 5.0f);
-
-        BeginDrawing();
-        BeginMode2D(camera);
-        ClearBackground(BLACK);
-
-        for (int i = 0; i < GRID_WIDTH * GRID_HEIGHT; i++)
+        const int rays = 360;
+        const int ray_length = 50;
+        for (int i = 0; i < rays; i++)
         {
-            Tile *tile = &tiles[i];
-            TileDraw(tile);
+            float angle = (float)i / (float)rays * 2.0f * PI;
+            Vector2 rayDirection = {cosf(angle), sinf(angle)};
+            Vector2 rayPosition = a.position;
+
+            for (int j = 0; j < ray_length; j++)
+            {
+                rayPosition.x += rayDirection.x * (TILE_WIDTH / 4);
+                rayPosition.y += rayDirection.y * (TILE_HEIGHT / 4);
+
+                int tileX = (int)(rayPosition.x / TILE_WIDTH);
+                int tileY = (int)(rayPosition.y / TILE_HEIGHT);
+
+                if (tileX < 0 || tileX >= GRID_WIDTH || tileY < 0 || tileY >= GRID_HEIGHT)
+                {
+                    break;
+                }
+
+                int index = tileY * GRID_WIDTH + tileX;
+                Tile *tile = &tiles[index];
+                if (tile->mask & SOLID_MASK)
+                {
+                    break;
+                }
+
+                tile->mask = tile->mask | EXPLORED_MASK;
+            }
         }
+
+        camera.target = Vector2LerpDecay(camera.target, a.position, 5.0f, TIME_STEP);
 
         if (playerMoved)
         {
@@ -296,6 +324,18 @@ int main()
                 a.position = newPosition;
                 playerMoved = true;
             }
+        }
+
+        // Rendering
+
+        ClearBackground(BLACK);
+        BeginDrawing();
+        BeginMode2D(camera);
+
+        for (int i = 0; i < GRID_WIDTH * GRID_HEIGHT; i++)
+        {
+            Tile *tile = &tiles[i];
+            TileDraw(tile);
         }
 
         for (int i = 0; i < actorCount; i++)
