@@ -21,6 +21,7 @@ typedef struct Actor
     bool moved;
     Stats stats;
     char *name;
+    int mask;
 } Actor;
 
 Stats DefaultStats()
@@ -55,7 +56,20 @@ Actor ActorCreate(float x, float y, Texture2D texture, Color tint)
     actor.moved = false;
     actor.stats = DefaultStats();
     actor.name = NULL;
+    actor.mask = 0;
     return actor;
+}
+
+void ActorSetVisibility(Actor *actor, bool visible)
+{
+    if (visible)
+    {
+        actor->mask = actor->mask | VISIBILITY_MASK;
+    }
+    else
+    {
+        actor->mask = actor->mask & (~VISIBILITY_MASK);
+    }
 }
 
 Actor ActorSetName(Actor actor, char *name)
@@ -75,7 +89,7 @@ char *ActorGetName(const Actor *actor)
 
 void ActorDraw(const Actor *actor)
 {
-    if (!ActorDead(actor))
+    if (!ActorDead(actor) && actor->mask & VISIBILITY_MASK)
     {
         DrawTextureEx(actor->texture,
                       actor->position,

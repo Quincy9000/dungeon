@@ -1,13 +1,10 @@
+#include "constants.c"
+
 #include "raylib.h"
 #include "raymath.h"
-#include "constants.c"
 
 #ifndef TILE_C
 #define TILE_C
-
-const int VISIBILITY_MASK = 1 << 0;
-const int EXPLORED_MASK = 1 << 1;
-const int SOLID_MASK = 1 << 2;
 
 typedef struct Tile
 {
@@ -32,6 +29,12 @@ void TileDraw(const Tile *tile)
         DrawTextureV(tile->texture,
                      tile->position,
                      GRAY);
+    }
+    else if (tile->mask & SEEN_MASK)
+    {
+        DrawTextureV(tile->texture,
+                     tile->position,
+                     DARKGRAY);
     }
     else
     {

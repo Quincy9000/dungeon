@@ -19,7 +19,7 @@ Vector2 Vector2LerpDecay(Vector2 start, Vector2 end, float speed, float decay)
 
 bool IsKeyPressedFast(int key)
 {
-    return IsKeyPressedRepeat(key) || IsKeyPressed(key);
+    return IsKeyPressed(key) || IsKeyPressedRepeat(key);
 }
 
 Vector2 TryActorMoveInput(Actor *actor)
@@ -213,23 +213,25 @@ int main()
         CarveCorridor(roomA, roomB, tiles);
     }
 
-    const size_t actorCount = 10;
+    const size_t actorCount = 50;
     Actor actors[actorCount];
 
     for (int i = 0; i < actorCount; i++)
     {
         Room room = rooms[GetRandomValue(0, ROOM_COUNT - 1)];
         Vector2 center = RoomRandomSpot(&room);
-        actors[i] = ActorCreate(center.x * TILE_WIDTH, center.y * TILE_HEIGHT, texture, BLUE);
+        actors[i] = ActorCreate(center.x * TILE_WIDTH, center.y * TILE_HEIGHT, texture, RED);
         actors[i] = ActorSetName(actors[i], GetRandomActorName());
+        ActorSetVisibility(&actors[i], false);
     }
 
     Room room = rooms[GetRandomValue(0, ROOM_COUNT - 1)];
     Vector2 center = RoomRandomSpot(&room);
-    Actor a = ActorCreate(center.x * TILE_WIDTH, center.y * TILE_HEIGHT, texture, ORANGE);
+    Actor a = ActorCreate(center.x * TILE_WIDTH, center.y * TILE_HEIGHT, texture, GREEN);
     a.stats = (Stats){.health = 200, .attack = 20, .defense = 5};
     a = ActorSetName(a, "Player");
     camera.target = a.position;
+    ActorSetVisibility(&a, true);
 
     bool playerMoved = false;
 
@@ -238,6 +240,25 @@ int main()
         // Game Logic
 
         TryExit();
+
+        for (int k = 0; k < actorCount; k++)
+        {
+            Actor *other = &actors[k];
+            if (ActorDead(other))
+            {
+                continue;
+            }
+            ActorSetVisibility(other, false);
+        }
+
+        for (size_t i = 0; i < GRID_WIDTH * GRID_HEIGHT; i++)
+        {
+            Tile *tile = &tiles[i];
+            if (tile->mask & SEEN_MASK)
+            {
+                tile->mask = tile->mask & (~EXPLORED_MASK);
+            }
+        }
 
         const int rays = 360;
         const int ray_length = 50;
@@ -260,6 +281,19 @@ int main()
                     break;
                 }
 
+                for (int k = 0; k < actorCount; k++)
+                {
+                    Actor *other = &actors[k];
+                    if (ActorDead(other))
+                    {
+                        continue;
+                    }
+                    if (CheckCollisionPointRec(rayPosition, (Rectangle){other->position.x, other->position.y, other->texture.width, other->texture.height}))
+                    {
+                        ActorSetVisibility(other, true);
+                    }
+                }
+
                 int index = tileY * GRID_WIDTH + tileX;
                 Tile *tile = &tiles[index];
                 if (tile->mask & SOLID_MASK)
@@ -267,7 +301,7 @@ int main()
                     break;
                 }
 
-                tile->mask = tile->mask | EXPLORED_MASK;
+                tile->mask = tile->mask | EXPLORED_MASK | SEEN_MASK;
             }
         }
 
@@ -328,8 +362,8 @@ int main()
 
         // Rendering
 
-        ClearBackground(BLACK);
         BeginDrawing();
+        ClearBackground(BLACK);
         BeginMode2D(camera);
 
         for (int i = 0; i < GRID_WIDTH * GRID_HEIGHT; i++)
@@ -352,7 +386,10 @@ int main()
                 continue;
             }
             Vector2 screenPos = actor->position;
-            GuiDrawText(ActorGetName(actor), (Rectangle){screenPos.x - 50, screenPos.y - 40, 100, 20}, TEXT_ALIGN_CENTER, WHITE);
+            if (actor->mask & VISIBILITY_MASK)
+            {
+                GuiDrawText(ActorGetName(actor), (Rectangle){screenPos.x - 50, screenPos.y - 40, 100, 20}, TEXT_ALIGN_CENTER, WHITE);
+            }
         }
 
         EndMode2D();
