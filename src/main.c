@@ -12,6 +12,11 @@
 #include "room.c"
 #include "actor.c"
 
+Vector2 Vector2LerpDecay(Vector2 start, Vector2 end, float decay)
+{
+    return Vector2Lerp(start, end, 1.0f - expf(-decay));
+}
+
 bool IsKeyPressedFast(int key)
 {
     return IsKeyPressedRepeat(key) || IsKeyPressed(key);
@@ -220,6 +225,7 @@ int main()
     Actor a = ActorCreate(center.x * TILE_WIDTH, center.y * TILE_HEIGHT, texture, ORANGE);
     a.stats = (Stats){.health = 200, .attack = 20, .defense = 5};
     a = ActorSetName(a, "Player");
+    camera.target = a.position;
 
     bool playerMoved = false;
 
@@ -227,7 +233,7 @@ int main()
     {
         TryExit();
 
-        camera.target = Vector2Lerp(camera.target, a.position, TIME_STEP * 5.0f);
+        camera.target = Vector2LerpDecay(camera.target, a.position, TIME_STEP * 5.0f);
 
         BeginDrawing();
         BeginMode2D(camera);
