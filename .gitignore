@@ -1,0 +1,107 @@
+# Compiled object files
+*.o
+*.ko
+*.obj
+*.lo
+*.la
+
+# Static / shared libraries
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+
+# Executables and common output
+a.out
+*.out
+*.exe
+*.elf
+*.app
+
+# Precompiled headers
+*.gch
+
+# Build directories
+/build/
+bin/
+out/
+Debug/
+Release/
+cmake-build-*/
+_build/
+dist/
+dist-*/
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+
+# Meson / Ninja
+meson-logs/
+meson-private/
+build.ninja
+
+# Autotools
+config.log
+config.status
+autom4te.cache/
+
+# Generated dependency files
+*.d
+.deps/
+.depend
+*.su
+
+# Coverage and profiling
+*.gcda
+*.gcno
+coverage/
+lcov.info
+
+# Debugging files
+*.dSYM/
+*.exe.stackdump
+*.stackdump
+*.core
+*.core.*
+
+# IDEs / editors
+.vscode/
+.idea/
+*.code-workspace
+*.project
+*.cproject
+*.settings/
+*.launch
+*.suo
+*.user
+*.sln
+*.vcxproj*
+*.ncb
+*.sdf
+
+# Tags and index files
+tags
+cscope.*
+ctags
+
+# Temp and swap files
+*~
+.#*
+*.swp
+*.swo
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Patch / backup files
+*.orig
+*~
+
+include/
