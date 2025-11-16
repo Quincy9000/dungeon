@@ -81,17 +81,30 @@ Vector2 ActorGetNextPosition(const Actor *actor, const Actor *player, const Tile
 {
     int sx = (int)(actor->position.x / TILE_WIDTH);
     int sy = (int)(actor->position.y / TILE_HEIGHT);
+
     int gx = (int)(player->position.x / TILE_WIDTH);
     int gy = (int)(player->position.y / TILE_HEIGHT);
 
-    size_t pathLen = 0;
-    bool success = AStarFindPathCached(sx, sy, gx, gy, tiles, &pathLen);
+    int dx = gx - sx;
+    int dy = gy - sy;
+    int dist = abs(dx) + abs(dy); // Manhattan
 
-    if (success && pathLen > 1) // path includes current tile, so next step is [1]
+    if (dist <= 10)
     {
-        Vector2 nextTile = pathBuffer[1];
-        Vector2 nextPos = {nextTile.x * TILE_WIDTH, nextTile.y * TILE_HEIGHT};
-        return nextPos;
+        size_t pathLength = 0;
+        bool found = AStarFindPathCached(sx, sy, gx, gy, tiles, &pathLength);
+        if (found && pathLength > 1)
+        {
+            Vector2 nextTile = pathBuffer[1];
+            Vector2 newPosition = {
+                .x = nextTile.x * TILE_WIDTH,
+                .y = nextTile.y * TILE_HEIGHT};
+            return newPosition;
+        }
+        else
+        {
+            return ActorMoveRandom(actor);
+        }
     }
     else
     {
@@ -236,7 +249,7 @@ int main()
         CarveCorridor(roomA, roomB, tiles);
     }
 
-    const size_t actorCount = 50;
+    const size_t actorCount = 20;
     Actor actors[actorCount];
 
     for (int i = 0; i < actorCount; i++)
@@ -246,15 +259,6 @@ int main()
         actors[i] = ActorCreate(center.x * TILE_WIDTH, center.y * TILE_HEIGHT, texture, RED);
         actors[i] = ActorSetName(actors[i], GetRandomActorName());
         ActorSetVisibility(&actors[i], false);
-
-        if (GetRandomValue(0, 1) == 1)
-        {
-            ActorSetBrain(&actors[i], true);
-        }
-        else
-        {
-            ActorSetBrain(&actors[i], false);
-        }
     }
 
     Room room = rooms[GetRandomValue(0, ROOM_COUNT - 1)];
@@ -423,7 +427,7 @@ int main()
             if (actor->mask & VISIBILITY_MASK)
             {
                 GuiSetStyle(DEFAULT, TEXT_SIZE, 14);
-                GuiDrawText(TextFormat("%s: Smart", ActorGetName(actor)), (Rectangle){screenPos.x - 50, screenPos.y - 40, 100, 20}, TEXT_ALIGN_CENTER, YELLOW);
+                GuiDrawText(TextFormat("%s", ActorGetName(actor)), (Rectangle){screenPos.x - 50, screenPos.y - 40, 100, 20}, TEXT_ALIGN_CENTER, WHITE);
                 GuiSetStyle(DEFAULT, TEXT_SIZE, 12);
             }
         }
@@ -431,10 +435,12 @@ int main()
         EndMode2D();
         DrawText("Use WASD or Arrow Keys to move, SPACE to wait, ESC to exit", 10, 10, 20, WHITE);
 
-        GuiSetStyle(DEFAULT, TEXT_SIZE, 18);
+        GuiSetStyle(DEFAULT, TEXT_SIZE, 14);
         GuiDrawText("Player Health:", (Rectangle){10, 50, 150, 30}, TEXT_ALIGN_LEFT, WHITE);
         GuiDrawText(TextFormat("%d", a.stats.health), (Rectangle){10, 70, 50, 30}, TEXT_ALIGN_LEFT, WHITE);
         GuiSetStyle(DEFAULT, TEXT_SIZE, 12);
+
+        DrawText(TextFormat("FPS: %d", GetFPS()), WIDTH - 100, 10, 20, WHITE);
 
         EndDrawing();
     }
