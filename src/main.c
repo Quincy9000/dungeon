@@ -12,9 +12,9 @@
 #include "room.c"
 #include "actor.c"
 
-Vector2 Vector2LerpDecay(Vector2 start, Vector2 end, float decay)
+Vector2 Vector2LerpDecay(Vector2 start, Vector2 end, float speed, float decay)
 {
-    return Vector2Lerp(start, end, 1.0f - expf(-decay));
+    return Vector2Lerp(start, end, 1.0f - expf(decay * -speed));
 }
 
 bool IsKeyPressedFast(int key)
