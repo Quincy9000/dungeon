@@ -101,7 +101,7 @@ bool CheckActorCanMoveTo(const Actor *actor, const Vector2 newPosition, const Ti
 
 bool ActorWait()
 {
-    return IsKeyPressed(KEY_SPACE);
+    return IsKeyPressed(KEY_SPACE) || IsKeyPressedRepeat(KEY_SPACE);
 }
 
 size_t CheckActorWalkintoActor(const Actor *actor, Vector2 newPosition, const Actor *otherActors, size_t actorCount)
@@ -128,7 +128,6 @@ int main()
 {
     InitWindow(WIDTH, HEIGHT, "Dungeon Crawler");
     SetTargetFPS(60);
-
     SetWindowState(FLAG_VSYNC_HINT);
 
     Camera2D camera;
@@ -151,6 +150,8 @@ int main()
         UnloadImage(img);
         return 1;
     }
+
+    UnloadImage(img);
     SetTextureFilter(texture, TEXTURE_FILTER_POINT);
 
     Tile *tiles = (Tile *)MemAlloc(GRID_WIDTH * GRID_HEIGHT * sizeof(Tile));
@@ -161,16 +162,9 @@ int main()
         return 1;
     }
 
-    FillTiles(tiles, texture, GRID_WIDTH, GRID_HEIGHT, TILE_WIDTH, TILE_HEIGHT);
+    FillTiles(tiles, texture);
 
-    const size_t roomCount = 30;
     Room rooms[roomCount];
-
-    const size_t minRoomWidth = 10;
-    const size_t minRoomHeight = 10;
-
-    const size_t maxRoomWidth = 20;
-    const size_t maxRoomHeight = 15;
 
     for (size_t i = 0; i < roomCount; i++)
     {
@@ -329,7 +323,6 @@ int main()
     CloseWindow();
     MemFree(tiles);
     UnloadTexture(texture);
-    UnloadImage(img);
 
     return 0;
 }

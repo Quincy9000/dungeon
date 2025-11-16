@@ -14,4 +14,12 @@ const float TIME_STEP = 1.0 / 60.0;
 const int TILE_WIDTH = ((float)WIDTH / (float)GRID_WIDTH);
 const int TILE_HEIGHT = ((float)HEIGHT / (float)GRID_HEIGHT);
 
+const size_t roomCount = 30;
+
+const size_t minRoomWidth = 10;
+const size_t minRoomHeight = 10;
+
+const size_t maxRoomWidth = 20;
+const size_t maxRoomHeight = 15;
+
 #endif // CONSTANTS_C

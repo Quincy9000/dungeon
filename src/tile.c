@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include "raymath.h"
+#include "constants.c"
 
 #ifndef TILE_C
 #define TILE_C
@@ -38,13 +39,13 @@ void TileDraw(const Tile *tile)
     }
 }
 
-void FillTiles(Tile *tiles, Texture2D texture, size_t grid_width, size_t grid_height, size_t tile_width, size_t tile_height)
+void FillTiles(Tile *tiles, Texture2D texture)
 {
-    for (int i = 0; i < grid_width * grid_height; i++)
+    for (int i = 0; i < GRID_WIDTH * GRID_HEIGHT; i++)
     {
-        float x = i % grid_width;
-        float y = i / grid_width;
-        Vector2 position = {x * tile_width, y * tile_height};
+        float x = i % GRID_WIDTH;
+        float y = i / GRID_WIDTH;
+        Vector2 position = {x * TILE_WIDTH, y * TILE_HEIGHT};
         tiles[i] = TileCreate(position, texture);
     }
 }
